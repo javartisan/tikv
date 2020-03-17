@@ -3,6 +3,7 @@
 use std::io::{Error, ErrorKind, Result};
 
 use futures01::stream::Stream;
+use futures01::Future;
 use futures_io::AsyncRead;
 use futures_util::compat::AsyncRead01CompatExt;
 use futures_util::io::AsyncReadExt;
@@ -120,7 +121,7 @@ impl ExternalStorage for S3Storage {
         };
         self.client
             .put_object(req)
-            .sync()
+            .wait()
             .map(|_| ())
             .map_err(|e| Error::new(ErrorKind::Other, format!("failed to put object {}", e)))
     }
@@ -135,7 +136,7 @@ impl ExternalStorage for S3Storage {
         };
         self.client
             .get_object(req)
-            .sync()
+            .wait()
             .map(|out| Box::new(out.body.unwrap().into_async_read().compat()) as _)
             .map_err(|e| match e {
                 RusotoError::Service(GetObjectError::NoSuchKey(key)) => Error::new(
